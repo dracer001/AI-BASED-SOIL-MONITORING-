@@ -47,7 +47,8 @@ class SoilInput(BaseModel):
     Nitrogen: float
     Phosphorous: float
     Potassium: float
-    Soil_Type: str
+    Soil_Type: str  # <-- keep underscore here
+
 
 # -----------------------
 # Init API
@@ -56,19 +57,18 @@ app = FastAPI()
 
 @app.post("/predict")
 def predict(data: SoilInput):
-    # Prepare input as DataFrame (to match training format)
     df = pd.DataFrame([data.dict()])
+    # Rename columns to match training data
+    df = df.rename(columns={"Soil_Type": "Soil Type"})
 
-    # Fertilizer prediction
     fert_pred = fertilizer_model.predict(df)[0]
-
-    # Soil quality prediction
     quality_pred = soil_quality_model.predict(df)[0]
 
     return {
         "soil_quality": float(quality_pred),
         "recommended_fertilizer": str(fert_pred)
     }
+
 
 # -----------------------
 # Run locally
