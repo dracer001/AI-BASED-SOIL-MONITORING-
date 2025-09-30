@@ -1,14 +1,22 @@
 # app.py
+import os
+import zipfile
 import joblib
+import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
 
-# Load models
-fertilizer_model = joblib.load("fertilizer_model.pkl")
-soil_quality_model = joblib.load("soil_quality_model.pkl")
+# === Unzip models if not already extracted ===
+if not os.path.exists("models"):
+    with zipfile.ZipFile("models.zip", "r") as zip_ref:
+        zip_ref.extractall("models")
 
-# Define input schema
+# === Load models from extracted folder ===
+fertilizer_model = joblib.load("models/fertilizer_model.pkl")
+soil_quality_model = joblib.load("models/soil_quality_model.pkl")
+
+# === Define input schema ===
 class SoilInput(BaseModel):
     Temparature: float
     Humidity: float
@@ -16,21 +24,18 @@ class SoilInput(BaseModel):
     Nitrogen: float
     Phosphorous: float
     Potassium: float
-    Soil_Type: str
+    Soil_Type: str   # make sure your model was trained with string/categorical features handled
 
-# Init API
+# === Initialize FastAPI ===
 app = FastAPI()
 
 @app.post("/predict")
 def predict(data: SoilInput):
-    # Prepare input as dataframe (to match training format)
-    import pandas as pd
+    # Convert input to dataframe
     df = pd.DataFrame([data.dict()])
 
-    # Fertilizer prediction
+    # Run predictions
     fert_pred = fertilizer_model.predict(df)[0]
-
-    # Soil quality prediction
     quality_pred = soil_quality_model.predict(df)[0]
 
     return {
@@ -38,6 +43,6 @@ def predict(data: SoilInput):
         "recommended_fertilizer": str(fert_pred)
     }
 
-# For local testing
+# === Local testing only ===
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
