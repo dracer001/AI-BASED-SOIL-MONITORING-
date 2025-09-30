@@ -8,6 +8,8 @@ from pydantic import BaseModel
 import uvicorn
 import pandas as pd
 
+# Init API
+app = FastAPI()
 
 # ✅ Add CORS middleware
 app.add_middleware(
